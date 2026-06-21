@@ -105,7 +105,7 @@ http://localhost:5000
 ## 👨‍💻 Developer
 
 **Nitesh Tiwari**
-Full Stack Developer | MERN Stack
+ | Full Stack Developer | MERN Stack
 
 GitHub: https://github.com/niteshtiwari07
 LinkedIn: https://www.linkedin.com/in/nitesh-tiwari7
