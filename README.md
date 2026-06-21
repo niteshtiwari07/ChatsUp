@@ -1,4 +1,4 @@
-# ChatsUp 💬
+# Full Stack Realtime Chat App 💬
 
 A modern real-time chat application built with the MERN stack, featuring secure authentication, instant messaging, image sharing, and live online status tracking.
 
