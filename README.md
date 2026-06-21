@@ -1,37 +1,111 @@
- *** Full Stack Realtime Chat App ***
+# ChatsUp 💬
 
-Highlights:
+A modern real-time chat application built with the MERN stack, featuring secure authentication, instant messaging, image sharing, and live online status tracking.
 
- Tech stack: MERN + Socket.io + TailwindCSS + Daisy UI
--  Authentication && Authorization with JWT
--  Real-time messaging with Socket.io
--  Online user status
--  Global state management with Zustand
--  Error handling both on the server and onthe       client
--  At the end Deployment like a pro for FREE!
+## 🚀 Features
 
+* 🔐 Secure Authentication & Authorization using JWT
+* 💬 Real-Time Messaging with Socket.IO
+* 🟢 Live Online/Offline User Status
+* 🖼️ Image Sharing with Cloudinary
+* 🎨 Light & Dark Theme Support
+* ⚡ Global State Management using Zustand
+* 🛡️ Protected Routes & Secure API Access
+* 📱 Responsive UI for Desktop & Mobile
+* 🔄 Real-Time Updates without Page Refresh
+* 🚨 Robust Client & Server Error Handling
 
-*** Setup .env file ***
+## 🛠️ Tech Stack
 
-```js
-MONGODB_URI=...
-PORT=5001
-JWT_SECRET=...
+### Frontend
 
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
+* React.js
+* Vite
+* Tailwind CSS
+* DaisyUI
+* Zustand
+* Axios
+* Socket.IO Client
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT Authentication
+* Socket.IO
+* Cloudinary
+
+## 📂 Environment Variables
+
+Create a `.env` file inside the backend folder:
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+PORT=5000
+JWT_SECRET=your_jwt_secret
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
 NODE_ENV=development
 ```
-==> Build the app
 
-```shell
-npm run build
+## ⚙️ Installation
+
+### Clone Repository
+
+```bash
+git clone https://github.com/niteshtiwari07/ChatsUp.git
+cd ChatsUp
 ```
 
-==> Start the app
+### Backend Setup
 
-```shell
-npm start
+```bash
+cd backend
+npm install
+npm run dev
 ```
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 🌐 Application URLs
+
+Frontend:
+
+```txt
+http://localhost:5173
+```
+
+Backend:
+
+```txt
+http://localhost:5000
+```
+
+## 📸 Core Functionalities
+
+* User Registration & Login
+* Real-Time One-to-One Chat
+* Image Messaging
+* Online User Tracking
+* User Profile Management
+* Theme Customization
+* Secure JWT-Based Authentication
+
+## 👨‍💻 Developer
+
+**Nitesh Tiwari**
+Full Stack Developer | MERN Stack
+
+GitHub: https://github.com/niteshtiwari07
+LinkedIn: https://www.linkedin.com/in/nitesh-tiwari7
