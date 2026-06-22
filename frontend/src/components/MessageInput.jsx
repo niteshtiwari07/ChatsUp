@@ -42,16 +42,13 @@ const MessageInput = () => {
  const handleTyping = (e) => {
   setText(e.target.value);
 
-  console.log("socket =", socket);
-  console.log("selectedUser =", selectedUser);
+  
 
   if (!socket || !selectedUser) {
-    console.log("socket or selectedUser missing");
     return;
   }
 
-  console.log("typing emitted");
-
+  
   socket.emit("typing", {
     receiverId: selectedUser._id,
   });
@@ -135,8 +132,8 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle ${
-              imagePreview ? "text-emerald-500" : "text-zinc-400"
+            className={`flex btn btn-sm sm:btn-md btn-circle ${
+                imagePreview ? "text-emerald-500" : "text-zinc-400"
             }`}
             onClick={() => fileInputRef.current?.click()}
           >
