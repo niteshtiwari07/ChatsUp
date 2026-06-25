@@ -42,6 +42,7 @@ io.on("connection", (socket) => {
     }
   });
 
+  
   socket.on("stopTyping", ({ receiverId }) => {
     const receiverSocketId = userSocketMap[receiverId];
 
