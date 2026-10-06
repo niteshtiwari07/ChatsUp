@@ -80,17 +80,7 @@ npm run dev
 
 ## 🌐 Application URLs
 
-Frontend:
-
-```txt
-http://localhost:5173
-```
-
-Backend:
-
-```txt
-http://localhost:5000
-```
+https://chats-up-wine.vercel.app/login
 
 ## 📸 Core Functionalities
 
