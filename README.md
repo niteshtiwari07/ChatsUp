@@ -80,7 +80,7 @@ npm run dev
 
 ## 🌐 Application URLs
 
-https://chats-up-wine.vercel.app/login
+https://chats-up-wine.vercel.app
 
 ## 📸 Core Functionalities
 
