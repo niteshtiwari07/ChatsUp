@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
@@ -39,7 +40,8 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser } = get();
+    if (!selectedUser) return;
 
     try {
       const res = await axiosInstance.post(
@@ -47,9 +49,9 @@ export const useChatStore = create((set, get) => ({
         messageData
       );
 
-      set({
-        messages: [...messages, res.data],
-      });
+      set((state) => ({
+        messages: [...state.messages, res.data],
+      }));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to send message");
     }
@@ -57,7 +59,6 @@ export const useChatStore = create((set, get) => ({
 
   subscribeToMessages: () => {
     const socket = useAuthStore.getState().socket;
-
     if (!socket) return;
 
     socket.off("newMessage");
@@ -65,40 +66,36 @@ export const useChatStore = create((set, get) => ({
     socket.off("userStopTyping");
 
     socket.on("newMessage", (newMessage) => {
-      console.log("NEW MESSAGE RECEIVED:", newMessage);
+      const { selectedUser, messages, unreadCounts } = get();
+      const authUser = useAuthStore.getState().authUser;
 
-      const currentSelectedUser = get().selectedUser;
+      if (!authUser) return;
 
-      if (
-        currentSelectedUser &&
-        newMessage.senderId === currentSelectedUser._id
-      ) {
-        set({
-          messages: [...get().messages, newMessage],
-        });
+      const senderId =
+        typeof newMessage.senderId === "object"
+          ? newMessage.senderId._id
+          : newMessage.senderId;
+
+      const selectedUserId = selectedUser?._id;
+
+      if (selectedUserId && senderId === selectedUserId) {
+        set({ messages: [...messages, newMessage] });
       } else {
-        set((state) => ({
+        set({
           unreadCounts: {
-            ...state.unreadCounts,
-            [newMessage.senderId]:
-              (state.unreadCounts[newMessage.senderId] || 0) + 1,
+            ...unreadCounts,
+            [senderId]: (unreadCounts[senderId] || 0) + 1,
           },
-        }));
+        });
       }
     });
 
-    socket.on("userTyping", () => {
-      set({ isTyping: true });
-    });
-
-    socket.on("userStopTyping", () => {
-      set({ isTyping: false });
-    });
+    socket.on("userTyping", () => set({ isTyping: true }));
+    socket.on("userStopTyping", () => set({ isTyping: false }));
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-
     if (!socket) return;
 
     socket.off("newMessage");
@@ -106,14 +103,21 @@ export const useChatStore = create((set, get) => ({
     socket.off("userStopTyping");
   },
 
-  setSelectedUser: (selectedUser) =>
+  setSelectedUser: (selectedUser) => {
+    if (!selectedUser) {
+      set({ selectedUser: null, isTyping: false });
+      return;
+    }
+
     set((state) => ({
       selectedUser,
+      isTyping: false,
       unreadCounts: {
         ...state.unreadCounts,
         [selectedUser._id]: 0,
       },
-    })),
+    }));
+  },
 
   clearTyping: () => set({ isTyping: false }),
 }));

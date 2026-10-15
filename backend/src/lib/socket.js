@@ -19,15 +19,13 @@ const io = new Server(server, {
   },
 });
 
+const userSocketMap = {};
+
 export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-const userSocketMap = {};
-
 io.on("connection", (socket) => {
-  console.log("A user connected", socket.id);
-
   const userId = socket.handshake.query.userId;
 
   if (userId) {
@@ -38,7 +36,6 @@ io.on("connection", (socket) => {
 
   socket.on("typing", ({ receiverId }) => {
     const receiverSocketId = userSocketMap[receiverId];
-
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("userTyping");
     }
@@ -46,15 +43,12 @@ io.on("connection", (socket) => {
 
   socket.on("stopTyping", ({ receiverId }) => {
     const receiverSocketId = userSocketMap[receiverId];
-
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("userStopTyping");
     }
   });
 
   socket.on("disconnect", () => {
-    console.log("A user disconnected", socket.id);
-
     if (userSocketMap[userId] === socket.id) {
       delete userSocketMap[userId];
     }
