@@ -20,7 +20,9 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get("/messages/users");
       set({ users: res.data });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load users");
+      toast.error(
+        error.response?.data?.message || "Failed to load users"
+      );
     } finally {
       set({ isUsersLoading: false });
     }
@@ -33,7 +35,9 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load messages");
+      toast.error(
+        error.response?.data?.message || "Failed to load messages"
+      );
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -49,11 +53,20 @@ export const useChatStore = create((set, get) => ({
         messageData
       );
 
+      const sentMessage = res.data;
+
       set((state) => ({
-        messages: [...state.messages, res.data],
+        messages: [...state.messages, sentMessage],
+        users: state.users.map((user) =>
+          String(user._id) === String(selectedUser._id)
+            ? { ...user, lastMessage: sentMessage }
+            : user
+        ),
       }));
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send message");
+      toast.error(
+        error.response?.data?.message || "Failed to send message"
+      );
     }
   },
 
@@ -66,27 +79,44 @@ export const useChatStore = create((set, get) => ({
     socket.off("userStopTyping");
 
     socket.on("newMessage", (newMessage) => {
-      const { selectedUser, messages, unreadCounts } = get();
-      const authUser = useAuthStore.getState().authUser;
+      const { selectedUser } = get();
+      const senderId = String(newMessage.senderId);
+      const selectedUserId = String(selectedUser?._id);
 
-      if (!authUser) return;
+      // Update the contact's latest message in the sidebar.
+      set((state) => ({
+        users: state.users.map((user) =>
+          String(user._id) === senderId
+            ? { ...user, lastMessage: newMessage }
+            : user
+        ),
+      }));
 
-      const senderId =
-        typeof newMessage.senderId === "object"
-          ? newMessage.senderId._id
-          : newMessage.senderId;
+      // Add the message to the open chat, or count it as unread.
+      if (selectedUserId === senderId) {
+        set((state) => {
+          const alreadyExists = state.messages.some(
+            (message) =>
+              String(message._id) === String(newMessage._id)
+          );
 
-      const selectedUserId = selectedUser?._id;
-
-      if (selectedUserId && senderId === selectedUserId) {
-        set({ messages: [...messages, newMessage] });
-      } else {
-        set({
-          unreadCounts: {
-            ...unreadCounts,
-            [senderId]: (unreadCounts[senderId] || 0) + 1,
-          },
+          return {
+            messages: alreadyExists
+              ? state.messages
+              : [...state.messages, newMessage],
+            unreadCounts: {
+              ...state.unreadCounts,
+              [senderId]: 0,
+            },
+          };
         });
+      } else {
+        set((state) => ({
+          unreadCounts: {
+            ...state.unreadCounts,
+            [senderId]: (state.unreadCounts[senderId] || 0) + 1,
+          },
+        }));
       }
     });
 
@@ -104,11 +134,6 @@ export const useChatStore = create((set, get) => ({
   },
 
   setSelectedUser: (selectedUser) => {
-    if (!selectedUser) {
-      set({ selectedUser: null, isTyping: false });
-      return;
-    }
-
     set((state) => ({
       selectedUser,
       isTyping: false,

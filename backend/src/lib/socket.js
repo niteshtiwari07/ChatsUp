@@ -19,41 +19,60 @@ const io = new Server(server, {
   },
 });
 
-const userSocketMap = {};
+const userSocketMap = new Map();
 
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  const sockets = userSocketMap.get(String(userId));
+  return sockets ? [...sockets][0] : undefined;
 }
+
+const emitOnlineUsers = () => {
+  io.emit("getOnlineUsers", [...userSocketMap.keys()]);
+};
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
 
   if (userId) {
-    userSocketMap[userId] = socket.id;
+    const id = String(userId);
+
+    if (!userSocketMap.has(id)) {
+      userSocketMap.set(id, new Set());
+    }
+
+    userSocketMap.get(id).add(socket.id);
+    emitOnlineUsers();
   }
 
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
-
   socket.on("typing", ({ receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
+    const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("userTyping");
     }
   });
 
   socket.on("stopTyping", ({ receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
+    const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("userStopTyping");
     }
   });
 
   socket.on("disconnect", () => {
-    if (userSocketMap[userId] === socket.id) {
-      delete userSocketMap[userId];
-    }
+    if (!userId) return;
 
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    const id = String(userId);
+    const sockets = userSocketMap.get(id);
+
+    if (sockets) {
+      sockets.delete(socket.id);
+
+      if (sockets.size === 0) {
+        userSocketMap.delete(id);
+      }
+
+      emitOnlineUsers();
+    }
   });
 });
 
