@@ -22,12 +22,17 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.use(cookieParser());
 
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: [
+      "http://localhost:5173",
+      "https://chats-up-wine.vercel.app",
+    ],
     credentials: true,
   })
 );
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
