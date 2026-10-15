@@ -1,3 +1,4 @@
+
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
@@ -10,7 +11,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: [
+      "http://localhost:5173",
+      "https://chats-up-wine.vercel.app",
+    ],
     credentials: true,
   },
 });
@@ -19,8 +23,7 @@ export function getReceiverSocketId(userId) {
   return userSocketMap[userId];
 }
 
-// Store online users
-const userSocketMap = {}; // { userId: socketId }
+const userSocketMap = {};
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
@@ -31,12 +34,7 @@ io.on("connection", (socket) => {
     userSocketMap[userId] = socket.id;
   }
 
-  // Send online users to all clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
-
-  // =========================
-  // Typing Indicator Events
-  // =========================
 
   socket.on("typing", ({ receiverId }) => {
     const receiverSocketId = userSocketMap[receiverId];
@@ -54,14 +52,12 @@ io.on("connection", (socket) => {
     }
   });
 
-  // =========================
-  // Disconnect
-  // =========================
-
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
 
-    delete userSocketMap[userId];
+    if (userSocketMap[userId] === socket.id) {
+      delete userSocketMap[userId];
+    }
 
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
