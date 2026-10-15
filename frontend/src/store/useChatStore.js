@@ -55,14 +55,22 @@ export const useChatStore = create((set, get) => ({
 
       const sentMessage = res.data;
 
-      set((state) => ({
-        messages: [...state.messages, sentMessage],
-        users: state.users.map((user) =>
-          String(user._id) === String(selectedUser._id)
-            ? { ...user, lastMessage: sentMessage }
-            : user
-        ),
-      }));
+      set((state) => {
+        const alreadyExists = state.messages.some(
+          (m) => String(m._id) === String(sentMessage._id)
+        );
+
+        return {
+          messages: alreadyExists
+            ? state.messages
+            : [...state.messages, sentMessage],
+          users: state.users.map((user) =>
+            String(user._id) === String(selectedUser._id)
+              ? { ...user, lastMessage: sentMessage }
+              : user
+          ),
+        };
+      });
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to send message"
@@ -80,20 +88,28 @@ export const useChatStore = create((set, get) => ({
 
     socket.on("newMessage", (newMessage) => {
       const { selectedUser } = get();
+      const authUser = useAuthStore.getState().authUser;
+      const myId = authUser?._id ? String(authUser._id) : null;
       const senderId = String(newMessage.senderId);
-      const selectedUserId = String(selectedUser?._id);
+      const receiverId = String(newMessage.receiverId);
+      const selectedUserId = selectedUser?._id
+        ? String(selectedUser._id)
+        : null;
+
+      const isFromMe = Boolean(myId && senderId === myId);
+      const partnerId = isFromMe ? receiverId : senderId;
 
       // Update the contact's latest message in the sidebar.
       set((state) => ({
         users: state.users.map((user) =>
-          String(user._id) === senderId
+          String(user._id) === partnerId
             ? { ...user, lastMessage: newMessage }
             : user
         ),
       }));
 
       // Add the message to the open chat, or count it as unread.
-      if (selectedUserId === senderId) {
+      if (selectedUserId === partnerId) {
         set((state) => {
           const alreadyExists = state.messages.some(
             (message) =>
@@ -106,15 +122,15 @@ export const useChatStore = create((set, get) => ({
               : [...state.messages, newMessage],
             unreadCounts: {
               ...state.unreadCounts,
-              [senderId]: 0,
+              [partnerId]: 0,
             },
           };
         });
-      } else {
+      } else if (!isFromMe) {
         set((state) => ({
           unreadCounts: {
             ...state.unreadCounts,
-            [senderId]: (state.unreadCounts[senderId] || 0) + 1,
+            [partnerId]: (state.unreadCounts[partnerId] || 0) + 1,
           },
         }));
       }
@@ -137,10 +153,12 @@ export const useChatStore = create((set, get) => ({
     set((state) => ({
       selectedUser,
       isTyping: false,
-      unreadCounts: {
-        ...state.unreadCounts,
-        [selectedUser._id]: 0,
-      },
+      unreadCounts: selectedUser
+        ? {
+            ...state.unreadCounts,
+            [String(selectedUser._id)]: 0,
+          }
+        : state.unreadCounts,
     }));
   },
 

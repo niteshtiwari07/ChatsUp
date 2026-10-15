@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
+import { useChatStore } from "./useChatStore";
 
 const BASE_URL =
   import.meta.env.MODE === "development"
@@ -23,7 +24,7 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.get("/auth/check");
       set({ authUser: res.data });
       get().connectSocket();
-    } catch (error) {
+    } catch {
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
@@ -69,6 +70,7 @@ export const useAuthStore = create((set, get) => ({
       await axiosInstance.post("/auth/logout");
       get().disconnectSocket();
       set({ authUser: null, onlineUsers: [] });
+      useChatStore.getState().setSelectedUser(null);
       toast.success("Logged out successfully");
     } catch (error) {
       toast.error(
@@ -101,7 +103,16 @@ export const useAuthStore = create((set, get) => ({
 
     if (!authUser?._id) return;
 
-    if (socket?.connected) return;
+    const currentUserId = String(authUser._id);
+
+    // If socket is already connected or attempting to connect for this user, do not recreate
+    if (
+      socket &&
+      socket.io?.opts?.query?.userId === currentUserId &&
+      (socket.connected || socket.active)
+    ) {
+      return;
+    }
 
     if (socket) {
       socket.removeAllListeners();
@@ -110,7 +121,7 @@ export const useAuthStore = create((set, get) => ({
 
     const newSocket = io(BASE_URL, {
       query: {
-        userId: String(authUser._id),
+        userId: currentUserId,
       },
       withCredentials: true,
       reconnection: true,
@@ -121,23 +132,27 @@ export const useAuthStore = create((set, get) => ({
 
     newSocket.on("getOnlineUsers", (userIds) => {
       set({
-        onlineUsers: userIds.map((id) => String(id)),
+        onlineUsers: Array.isArray(userIds)
+          ? userIds.map((id) => String(id))
+          : [],
       });
     });
 
     newSocket.on("connect", () => {
-      // Online users are sent by the backend after connection.
+      useChatStore.getState().subscribeToMessages();
     });
 
     newSocket.on("disconnect", () => {
       set((state) => ({
         onlineUsers: state.onlineUsers.filter(
-          (id) => String(id) !== String(authUser._id)
+          (id) => String(id) !== currentUserId
         ),
       }));
     });
 
     set({ socket: newSocket });
+
+    useChatStore.getState().subscribeToMessages();
   },
 
   disconnectSocket: () => {

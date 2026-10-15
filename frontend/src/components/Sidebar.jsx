@@ -52,7 +52,7 @@ const Sidebar = () => {
           <span className="text-xs text-zinc-500">
             (
             {
-              onlineUsers.filter(
+              Array.from(new Set(onlineUsers.map(String))).filter(
                 (id) => String(id) !== String(authUser?._id)
               ).length
             }{" "}
@@ -65,13 +65,21 @@ const Sidebar = () => {
         {filteredUsers.map((user) => {
           const lastMessage = user.lastMessage;
 
-          const lastMessageText = lastMessage
-            ? lastMessage.image
-              ? lastMessage.text
-                ? `📷 ${lastMessage.text}`
-                : "📷 Image"
-              : lastMessage.text || ""
-            : "Start a conversation";
+          let lastMessageText = "Start a conversation";
+          if (lastMessage) {
+            const hasText = Boolean(lastMessage.text && lastMessage.text.trim());
+            const hasImage = Boolean(lastMessage.image);
+
+            if (hasImage && hasText) {
+              lastMessageText = `📷 ${lastMessage.text}`;
+            } else if (hasImage) {
+              lastMessageText = "📷 Image";
+            } else if (hasText) {
+              lastMessageText = lastMessage.text;
+            }
+          }
+
+          const userUnreadCount = unreadCounts?.[String(user._id)] || 0;
 
           return (
             <button
@@ -107,7 +115,7 @@ const Sidebar = () => {
 
                   <div
                     className={`text-xs truncate ${
-                      unreadCounts?.[user._id] > 0
+                      userUnreadCount > 0
                         ? "text-base-content font-semibold"
                         : "text-zinc-400"
                     }`}
@@ -120,9 +128,9 @@ const Sidebar = () => {
                   </div>
                 </div>
 
-                {unreadCounts?.[user._id] > 0 && (
+                {userUnreadCount > 0 && (
                   <div className="badge badge-primary badge-sm shrink-0">
-                    {unreadCounts[user._id]}
+                    {userUnreadCount}
                   </div>
                 )}
               </div>

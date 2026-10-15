@@ -7,8 +7,7 @@ import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
 
 const HomePage = () => {
-  const { selectedUser, subscribeToMessages, unsubscribeFromMessages } =
-    useChatStore();
+  const { selectedUser, subscribeToMessages } = useChatStore();
 
   const { socket } = useAuthStore();
 
@@ -16,11 +15,7 @@ const HomePage = () => {
     if (!socket) return;
 
     subscribeToMessages();
-
-    return () => {
-      unsubscribeFromMessages();
-    };
-  }, [socket, subscribeToMessages, unsubscribeFromMessages]);
+  }, [socket, subscribeToMessages]);
 
   return (
     <div className="h-screen bg-base-200">

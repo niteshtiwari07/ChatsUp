@@ -8,25 +8,46 @@ export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
 
-    const users = await User.find({
-      _id: { $ne: loggedInUserId },
-    }).select("-password");
+    const [users, lastMessages] = await Promise.all([
+      User.find({
+        _id: { $ne: loggedInUserId },
+      }).select("-password"),
+      Message.aggregate([
+        {
+          $match: {
+            $or: [
+              { senderId: loggedInUserId },
+              { receiverId: loggedInUserId },
+            ],
+          },
+        },
+        {
+          $sort: { createdAt: -1, _id: -1 },
+        },
+        {
+          $group: {
+            _id: {
+              $cond: [
+                { $eq: ["$senderId", loggedInUserId] },
+                "$receiverId",
+                "$senderId",
+              ],
+            },
+            lastMessage: { $first: "$$ROOT" },
+          },
+        },
+      ]),
+    ]);
 
-    const usersWithLastMessage = await Promise.all(
-      users.map(async (user) => {
-        const lastMessage = await Message.findOne({
-          $or: [
-            { senderId: loggedInUserId, receiverId: user._id },
-            { senderId: user._id, receiverId: loggedInUserId },
-          ],
-        }).sort({ createdAt: -1 });
+    const lastMessageMap = new Map();
+    lastMessages.forEach((item) => {
+      lastMessageMap.set(String(item._id), item.lastMessage);
+    });
 
-        return {
-          ...user.toObject(),
-          lastMessage: lastMessage || null,
-        };
-      })
-    );
+    const usersWithLastMessage = users.map((user) => ({
+      ...user.toObject(),
+      lastMessage: lastMessageMap.get(String(user._id)) || null,
+    }));
 
     res.status(200).json(usersWithLastMessage);
   } catch (error) {
@@ -79,11 +100,11 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
+    // Emit to receiver's room (all active sockets/tabs for receiver)
+    io.to(String(receiverId)).emit("newMessage", newMessage);
 
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    // Also emit to sender's room (so any other active tabs for sender stay synchronized)
+    io.to(String(senderId)).emit("newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {

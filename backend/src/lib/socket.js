@@ -33,8 +33,11 @@ const emitOnlineUsers = () => {
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
 
-  if (userId) {
+  if (userId && userId !== "undefined" && userId !== "null") {
     const id = String(userId);
+
+    // Join room for this user so io.to(id) delivers to all active tabs/sockets
+    socket.join(id);
 
     if (!userSocketMap.has(id)) {
       userSocketMap.set(id, new Set());
@@ -45,21 +48,19 @@ io.on("connection", (socket) => {
   }
 
   socket.on("typing", ({ receiverId }) => {
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("userTyping");
+    if (receiverId) {
+      io.to(String(receiverId)).emit("userTyping");
     }
   });
 
   socket.on("stopTyping", ({ receiverId }) => {
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("userStopTyping");
+    if (receiverId) {
+      io.to(String(receiverId)).emit("userStopTyping");
     }
   });
 
   socket.on("disconnect", () => {
-    if (!userId) return;
+    if (!userId || userId === "undefined" || userId === "null") return;
 
     const id = String(userId);
     const sockets = userSocketMap.get(id);
